@@ -360,7 +360,6 @@ var ShareActivityBase = SparkBase.extend(
         if (!this.object.files.items || !this.object.files.items.length) {
           return Promise.reject(new Error('Cannot submit share activity without files'));
         }
-
         var activity = {
           verb: this.verb,
           target: defaults({}, pick(this.target, 'id', 'objectType', 'url'), {
@@ -384,7 +383,15 @@ var ShareActivityBase = SparkBase.extend(
           actor: this.actor
         };
 
-        activity.object.contentCategory = this._determineContentCategory(activity.object.files.items);
+        if (properties.contentCategory === 'boards') {
+          activity.object.contentCategory = 'boards';
+          activity.object.contentType = properties.contentType;
+          activity.object.actions = properties.actions;
+        }
+        else {
+          activity.object.contentCategory = this._determineContentCategory(activity.object.files.items);
+        }
+
         activity.clientTempId = this.clientTempId || uuid.v4();
 
         return activity;

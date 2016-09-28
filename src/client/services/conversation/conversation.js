@@ -1626,6 +1626,13 @@ var ConversationService = SparkBase.extend(
           }
         });
 
+        // override the contentCategory for whiteboards. The image is used as
+        // the whiteboard thumbnail, so we need the file.
+        if (activity.object && activity.object.contentCategory === 'images' &&
+            properties.object && properties.object.contentCategory === 'boards') {
+          activity.object.contentCategory = properties.object.contentCategory;
+        }
+
         if (properties.target) {
           merge(activity, {
             target: pick(properties.target, 'id', 'url', 'objectType', 'kmsResourceObjectUrl')
