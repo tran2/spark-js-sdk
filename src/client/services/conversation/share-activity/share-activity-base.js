@@ -384,7 +384,7 @@ var ShareActivityBase = SparkBase.extend(
         };
 
         if (properties.contentCategory === 'boards') {
-          activity.object.contentCategory = 'boards';
+          activity.object.contentCategory = 'documents';
           activity.object.contentType = properties.contentType;
           activity.object.actions = properties.actions;
         }
