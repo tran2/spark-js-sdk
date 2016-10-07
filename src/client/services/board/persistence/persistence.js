@@ -11,8 +11,9 @@ var chunk = require('lodash.chunk');
 var pick = require('lodash.pick');
 var last = require('lodash.last');
 var promiseSeries = require('es6-promise-series');
-// number is hard-coded in board service atm
-var MAX_ALLOWED_INPUT_SIZE = 1000;
+
+// should be less than 1000
+var PAGE_SIZE = 150;
 
 /**
  * @class
@@ -25,7 +26,7 @@ var PersistenceService = SparkBase.extend({
 
   /**
    * Adds Content to a Channel
-   * If contents length is greater than MAX_ALLOWED_INPUT_SIZE, this method
+   * If contents length is greater than PAGE_SIZE, this method
    * will break contents into chunks and make multiple GET request to the
    * board service
    * @memberof Board.PersistenceService
@@ -36,7 +37,7 @@ var PersistenceService = SparkBase.extend({
    */
   addContent: function addContent(conversation, channel, contents) {
     var chunks = [];
-    chunks = chunk(contents, MAX_ALLOWED_INPUT_SIZE);
+    chunks = chunk(contents, PAGE_SIZE);
     // we want the first promise to resolve before continuing with the next
     // chunk or else we'll have race conditions among patches
     return promiseSeries(chunks.map(function _addContent(part) {
@@ -119,50 +120,26 @@ var PersistenceService = SparkBase.extend({
 
   /**
    * Gets all Content from a Channel
-   * It will make multiple GET requests if contents length are greater than
-   * MAX_ALLOW_INPUT_SIZE, the number is currently determined and hard-coded
-   * by the backend
+   * It will make multiple GET requests per PAGE_SIZE until all
+   * contents are fetch.
    * @memberof Board.PersistenceService
    * @param  {Board~Channel} channel
    * @return {Promise<Array>} Resolves with an Array of {@link Board~Content} objects.
    */
-  getAllContent: function getAllContent(channel) {
-    var contents = [];
-    var hasMoreContents = false;
-    function loop() {
-      if (!hasMoreContents) {
-        return Promise.resolve(contents);
-      }
-
-      var oldestContentTime = last(contents).createdTime;
-      return this._getPageOfContents(channel, {sinceDate: oldestContentTime})
-        .then(function getMoreContents(res) {
-          if (res.length >= MAX_ALLOWED_INPUT_SIZE) {
-            hasMoreContents = true;
-          }
-          else {
-            hasMoreContents = false;
-          }
-
-          // for the 2nd+ request, the result will include the last item of
-          // the first request, so we'll discard it here
-          res.shift();
-          contents = contents.concat(res);
-          return contents;
-        })
-        .then(loop.bind(this));
-    }
-
-    return this._getPageOfContents(channel)
+  getContents: function getContents(channel) {
+    return this._getPageOfContents(channel, {contentsLimit: PAGE_SIZE})
       .then(function getContents(res) {
-        contents = res;
-        if (contents.length >= MAX_ALLOWED_INPUT_SIZE) {
-          hasMoreContents = true;
+        var contents = res.contents;
+        if (res.links.next) {
+          channel.uri = res.links.next;
+          return this.getContents(channel)
+            .then(function concatContents(moreContents) {
+              contents = contents.concat(moreContents);
+              return contents;
+            });
         }
-
         return contents;
-      })
-      .then(loop.bind(this));
+      }.bind(this));
   },
 
   /**
@@ -258,15 +235,23 @@ var PersistenceService = SparkBase.extend({
 
   _getPageOfContents: function _getPageOfContents(channel, query) {
     query = query ? pick(query, 'sinceDate', 'contentsLimit') : {};
-
+    var uri = channel.uri || channel.channelUrl + '/contents';
+    var links;
     return this.spark.request({
       method: 'GET',
-      uri: channel.channelUrl + '/contents',
+      uri: uri,
       qs: query
     })
       .then(function decryptContents(res) {
+        links = this.spark.board.parseLinkHeaders(res.headers.link);
         return this.spark.board.decryptContents(res.body);
-      }.bind(this));
+      }.bind(this))
+      .then(function formatRes(decryptedContents) {
+        return {
+          links: links,
+          contents: decryptedContents
+        };
+      });
   }
 
 });

@@ -374,11 +374,11 @@ describe('Services', function() {
             });
         });
 
-        flaky(it)('can deal with tons of contents by pagination', function() {
-          var tonsOfContents = generateTonsOfContents(2100);
+        flaky(it.only)('can deal with tons of contents by pagination', function() {
+          var tonsOfContents = generateTonsOfContents(600);
           return party.mccoy.spark.board.persistence.addContent(conversation, board, tonsOfContents)
             .then(function() {
-              return party.mccoy.spark.board.persistence.getAllContent(board);
+              return party.mccoy.spark.board.persistence.getContents(board);
             })
             .then(function(res) {
               assert.equal(res.length, tonsOfContents.length);
