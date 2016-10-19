@@ -197,7 +197,8 @@ var ShareActivityBase = SparkBase.extend(
               mimeType: file.type,
               objectType: 'file',
               scr: scr,
-              url: data.downloadUrl
+              url: data.downloadUrl,
+              actions: file.actions
             });
           });
 
@@ -372,7 +373,7 @@ var ShareActivityBase = SparkBase.extend(
             mentions: this.object.mentions || properties.mentions,
             files: {
               items: this.object.files.items.map(function prepareFile(file) {
-                var item = pick(file, 'displayName', 'fileSize', 'mimeType', 'objectType', 'scr', 'url', 'clientTempId');
+                var item = pick(file, 'displayName', 'fileSize', 'mimeType', 'objectType', 'scr', 'url', 'clientTempId', 'actions');
                 if (file.image && file.image.scr) {
                   item.image = file.image;
                 }
@@ -383,14 +384,7 @@ var ShareActivityBase = SparkBase.extend(
           actor: this.actor
         };
 
-        if (properties.contentCategory === 'boards') {
-          activity.object.contentCategory = 'documents';
-          activity.object.contentType = properties.contentType;
-          activity.object.actions = properties.actions;
-        }
-        else {
-          activity.object.contentCategory = this._determineContentCategory(activity.object.files.items);
-        }
+        activity.object.contentCategory = this._determineContentCategory(activity.object.files.items);
 
         activity.clientTempId = this.clientTempId || uuid.v4();
 
@@ -417,6 +411,10 @@ var ShareActivityBase = SparkBase.extend(
    * @private
    */
   _determineContentCategory: function _determineContentCategory(items) {
+    if (filter(items, 'actions').length > 0) {
+      return 'documents';
+    }
+
     var mimeTypes = filter(pluck(items, 'mimeType'));
     if (mimeTypes.length !== items.length) {
       return 'documents';
