@@ -91,10 +91,7 @@ var PersistenceService = SparkBase.extend({
         imageScr.encryptedScr = encryptedScr;
         return encryptedScr;
       }.bind(this))
-      .then(function getChannelInfo() {
-        return this.spark.board.persistence.getChannel(channel);
-      }.bind(this))
-      .then(function addSnapshotToChannel(channelInfo) {
+      .then(function addSnapshotToChannel() {
         var imageBody = {
           image: {
             url: imageScr.loc,
@@ -107,12 +104,11 @@ var PersistenceService = SparkBase.extend({
             updateInterval: 360000
           }
         };
-        var channelBody = assign({}, channelInfo, imageBody);
         return this.spark.request({
-          method: 'PUT',
+          method: 'PATCH',
           api: 'board',
           resource: '/channels/' + channel.channelId,
-          body: channelBody
+          body: imageBody
         });
       }.bind(this))
       .then(function returnSnapshotRes(res) {
