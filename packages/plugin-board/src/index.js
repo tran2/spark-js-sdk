@@ -22,7 +22,6 @@ registerPlugin(`board`, Board, {
         direction: `inbound`,
 
         test(ctx, options) {
-
           // we must have items
           if (!has(options, `body.items`) || options.body.items.length === 0) {
             return Promise.resolve(false);
@@ -48,6 +47,21 @@ registerPlugin(`board`, Board, {
         extract(options) {
           return Promise.resolve(options.body);
         }
+      },
+      {
+        name: `encryptChannel`,
+        direction: `outbound`,
+
+        test(ctx, options) {
+          if (get(options, `service`) === `board` && has(options, `body.aclUrlLink`)) {
+            return Promise.resolve(true);
+          }
+          return Promise.resolve(false);
+        },
+
+        extract(options) {
+          return Promise.resolve(options.body);
+        }
       }
     ],
     transforms: [
@@ -59,6 +73,19 @@ registerPlugin(`board`, Board, {
           return ctx.spark.board.decryptContents(object)
             .then((decryptedContents) => {
               object.items = decryptedContents;
+            });
+        }
+      },
+      {
+        name: `encryptChannel`,
+        direciton: `outbound`,
+        fn(ctx, object) {
+          return ctx.spark.encryption.kms.createUnboundKeys({count: 1})
+            .then((keys) => {
+              const key = keys[0];
+              object.defaultEncryptionKeyUrl = key.uri;
+              object.kmsMessage.keyUris.push(key.uri);
+              return ctx.transform(`encryptKmsMessage`, object);
             });
         }
       }
