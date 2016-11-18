@@ -266,14 +266,25 @@ var PersistenceService = SparkBase.extend({
    * @param  {Object} data - Mercury bindings
    * @return {Promise<Board~Registration>}
    */
-  register: function register(data) {
+  register: function register(channelId) {
+    console.log('TRAN TEST registration', this.spark.mercury.localClusterServiceUrls);
+    console.log('TRAN TEST socket url', this.spark.mercury.socket.url);
+    var webSocketUrl = this.spark.mercury.socket.url;
+    webSocketUrl = webSocketUrl.replace('?outboundWireFormat=text&mercuryRegistrationStatus=true', '');
+    var data = {
+      mercuryConnectionServiceClusterUrl: this.spark.mercury.localClusterServiceUrls.mercuryConnectionServiceClusterUrl,
+      webSocketUrl: webSocketUrl,
+      action: 'REPLACE'
+    }
+
     return this.spark.request({
       method: 'POST',
       api: 'board',
-      resource: '/registrations',
+      resource: '/channels/' + channelId + '/register',
       body: data
     })
       .then(function resolveWithBody(res) {
+        console.log('TRAN TEST registration result', res.body);
         return res.body;
       });
   },

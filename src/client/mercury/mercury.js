@@ -40,6 +40,9 @@ var Mercury = SparkBase.extend(
     },
     socket: {
       type: 'any'
+    },
+    localClusterServiceUrls: {
+      type: 'object'
     }
   },
 
@@ -106,6 +109,11 @@ var Mercury = SparkBase.extend(
    */
   stopListening: function stopListening() {
     return this.disconnect();
+  },
+
+  processRegistrationStatusEvent: function(message) {
+    console.log('TRAN TEST processRegistrationStatusEvent', message);
+    this.localClusterServiceUrls = message.localClusterServiceUrls;
   },
 
   _connectWithBackoff: oneFlight('_connectWithBackoff', function _connectWithBackoff() {
@@ -328,6 +336,8 @@ var Mercury = SparkBase.extend(
       this._moveHeadersToData(event);
     }
 
+    console.log('TRAN TEST onmessage', event.data.eventType);
+
     // This looks a little more complicated than it needs to right now, but
     // eventually we'll want to be able to register event handlers rather than
     // just autowiring them.
@@ -374,6 +384,7 @@ var Mercury = SparkBase.extend(
       return handlers;
     }
     var name = S('process_' + parts[1] + '_event').camelize().s;
+    console.log('TRAN TEST', name);
     if (this.spark[namespace][name]) {
       handlers.push({
         namespace: namespace,

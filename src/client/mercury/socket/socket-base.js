@@ -170,11 +170,11 @@ assign(Socket.prototype, {
       }
 
       /* istanbul ignore else */
-      if (url.indexOf('bufferStates=true') === -1) {
+      if (url.indexOf('mercuryRegistrationStatus=true') === -1) {
         // It's unlikely bufferStates is the first parameter as
         // outboundingWireFormat will be there first
         /* istanbul ignore next */
-        url += ((url.indexOf('?') === -1) ? '?' : '&') + 'bufferStates=true';
+        url += ((url.indexOf('?') === -1) ? '?' : '&') + 'mercuryRegistrationStatus=true';
       }
 
       this.logger.info('socket: connecting to websocket');

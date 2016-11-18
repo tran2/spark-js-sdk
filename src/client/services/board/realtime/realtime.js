@@ -29,9 +29,9 @@ var RealtimeService = Mercury.extend({
       type: 'string',
       default: function defaultBoardSocketUrl() { return ''; }
     },
-    boardBindings: {
-      type: 'array',
-      default: function defaultBoardBinding() { return []; }
+    boardBinding: {
+      type: 'string',
+      default: function defaultBoardBinding() { return ''; }
     }
   },
 
@@ -71,13 +71,13 @@ var RealtimeService = Mercury.extend({
     * @returns {Promise<Board~Content>}
     */
   publishEncrypted: function publishEncrypted(encryptionKeyUrl, encryptedData, contentType) {
-    var bindings = this.spark.board.realtime.boardBindings;
+    var binding = this.spark.board.realtime.boardBinding;
     var data = {
       id: uuid.v4(),
       type: 'publishRequest',
       recipients: [{
         alertType: 'none',
-        route: bindings[0],
+        route: binding,
         headers: {}
       }],
       data: {
@@ -94,7 +94,7 @@ var RealtimeService = Mercury.extend({
     if (contentType) {
       data.data.contentType = contentType;
     }
-    return this.socket.send(data);
+    return this.spark.mercury.socket.send(data);
   },
 
   _attemptConnection: function _attemptConnection() {
