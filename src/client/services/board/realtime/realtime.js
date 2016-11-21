@@ -97,6 +97,27 @@ var RealtimeService = Mercury.extend({
     return this.spark.mercury.socket.send(data);
   },
 
+  disconnectFromShared: function(channelId) {
+    var webSocketUrl = this.spark.mercury.socket.url;
+    webSocketUrl = webSocketUrl.replace('?outboundWireFormat=text&mercuryRegistrationStatus=true', '');
+    var data = {
+      binding: this.spark.board.realtime.boardBinding,
+      webSocketUrl: webSocketUrl,
+      action: 'REMOVE'
+    }
+
+    return this.spark.request({
+      method: 'POST',
+      api: 'board',
+      resource: '/channels/' + channelId + '/register',
+      body: data
+    })
+      .then(function resolveWithBody(res) {
+        console.log('TRAN TEST registration result', res.body);
+        return res.body;
+      });
+  },
+
   _attemptConnection: function _attemptConnection() {
     var socket = this._getNewSocket();
     socket.on('close', this._onclose.bind(this));
