@@ -87,6 +87,36 @@ var PersistenceService = SparkBase.extend({
       });
   },
 
+  createPrivateChannel: function createPrivateChannel(channel) {
+    if (!channel) {
+      channel = {};
+    }
+
+    channel.kmsMessage = {
+      method: 'create',
+      uri: '/resources',
+      userIds: [this.spark.device.userId],
+      keyUris: []
+    };
+
+    return this.spark.encryption.getUnusedKey()
+      .then(function encryptKmsMessage(key) {
+        channel.defaultEncryptionKeyUrl = key.keyUrl;
+        return this.spark.conversation.encrypter.encryptProperty(channel, 'kmsMessage', key);
+      }.bind(this))
+      .then(function requestCreateChannel(preppedChannel) {
+        return this.spark.request({
+          method: 'POST',
+          api: 'board',
+          resource: '/channels',
+          body: preppedChannel
+        });
+      }.bind(this))
+      .then(function(res) {
+        return res.body;
+      });
+  },
+
   _encryptChannel: function _encryptChannel(conversation, channel) {
     channel = this._prepareChannel(conversation, channel);
     return this.spark.board.encryptChannel(channel);
