@@ -112,7 +112,7 @@ var PersistenceService = SparkBase.extend({
           body: preppedChannel
         });
       }.bind(this))
-      .then(function(res) {
+      .then(function resolveWithBody(res) {
         return res.body;
       });
   },
@@ -120,6 +120,27 @@ var PersistenceService = SparkBase.extend({
   _encryptChannel: function _encryptChannel(conversation, channel) {
     channel = this._prepareChannel(conversation, channel);
     return this.spark.board.encryptChannel(channel);
+  },
+
+  _encryptPrivateChannel: function _encryptPrivateChannel(conversation, channel) {
+    if (!channel) {
+      throw new Error('Channel cannot be null or undefined');
+    }
+    if (!channel.kmsResourceUrl) {
+      throw new Error('Must provide channel kmsResourceUrl');
+    }
+    if (!channel.defaultEncryptionKeyUrl) {
+      throw new Error('Must provide channel defaultEncryptionKeyUrl');
+    }
+
+    channel.kmsMessage = {
+      method: 'create',
+      uri: '/authorizations',
+      resourceUri: channel.kmsResourceUrl,
+      userIds: [conversation.kmsResourceObjectUrl]
+    };
+
+    return this.spark.board.encryptChannel(channel, {key: channel.defaultEncryptionKeyUrl});
   },
 
   _prepareChannel: function _prepareChannel(conversation, channel) {
