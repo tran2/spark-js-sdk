@@ -8,7 +8,6 @@
 var assign = require('lodash.assign');
 var SparkBase = require('../../../../lib/spark-base');
 var chunk = require('lodash.chunk');
-var last = require('lodash.last');
 var pick = require('lodash.pick');
 var promiseSeries = require('es6-promise-series');
 // number is hard-coded in board service atm
@@ -122,16 +121,16 @@ var PersistenceService = SparkBase.extend({
     return this.spark.board.encryptChannel(channel);
   },
 
-  _encryptPrivateChannel: function _encryptPrivateChannel(conversation, channel) {
+  _encryptKmsMessageToSavePrivateChannel: function _encryptPrivateChannel(conversation, channel) {
     if (!channel) {
       throw new Error('Channel cannot be null or undefined');
     }
     if (!channel.kmsResourceUrl) {
       throw new Error('Must provide channel kmsResourceUrl');
     }
-    if (!channel.defaultEncryptionKeyUrl) {
-      throw new Error('Must provide channel defaultEncryptionKeyUrl');
-    }
+    // if (!channel.defaultEncryptionKeyUrl) {
+    //   throw new Error('Must provide channel defaultEncryptionKeyUrl');
+    // }
 
     channel.kmsMessage = {
       method: 'create',
@@ -140,7 +139,7 @@ var PersistenceService = SparkBase.extend({
       userIds: [conversation.kmsResourceObjectUrl]
     };
 
-    return this.spark.board.encryptChannel(channel, {key: channel.defaultEncryptionKeyUrl});
+    return this.spark.conversation.encrypter._encryptPropKmsMessage(channel.kmsMessage, '', channel);
   },
 
   _prepareChannel: function _prepareChannel(conversation, channel) {
