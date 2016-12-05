@@ -44,16 +44,18 @@ var PersistenceService = SparkBase.extend({
 
   /**
    * Adds Image to a Channel
-   * Uploads image to spark files and adds SCR + downalodUrl to the persistence
+   * Uploads image to open space and adds SCR + downloadUrl to the persistence
    * service
    * @memberof Board.PersistenceService
    * @param  {Conversation~ConversationObject} conversation
    * @param  {Board~Channel} channel
    * @param  {File} image - image to be uploaded
+   * @param  {Object} options
+   * @param  {Object} options.hiddenSpace - upload to hidden space instead of open space
    * @return {Promise<Board~Content>}
    */
-  addImage: function addImage(conversation, channel, image) {
-    return this.spark.board._uploadImage(conversation, image)
+  addImage: function addImage(channel, image, options) {
+    return this.spark.board._uploadImage(channel, image, options)
       .then(function addContent(scr) {
         return this.spark.board.persistence.addContent(channel, [{
           mimeType: image.type,

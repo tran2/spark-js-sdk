@@ -26,7 +26,7 @@ function generateTonsOfContents(numOfContents) {
 }
 
 describe('Services', function() {
-  describe('Board', function() {
+  describe.only('Board', function() {
     this.timeout(120000);
 
     // added a third member in order to be able to create another room.
@@ -142,11 +142,23 @@ describe('Services', function() {
         return fixtures.fetchFixtures(fixture);
       });
 
-      it('uploads image to spark files', function() {
-        return ensureConversation()
-          .then(function(conversation) {
+      it('uploads image to board open space', function() {
+        return ensureBoard()
+          .then(function(board) {
+            return party.mccoy.spark.board._uploadImage(board, fixture.png);
+          })
+          .then(function(scr) {
+            return party.mccoy.spark.encryption.download(scr);
+          })
+          .then(function(file) {
+            assert(fixtures.isMatchingFile(file, fixture.png));
+          });
+      });
 
-            return party.mccoy.spark.board._uploadImage(conversation, fixture.png);
+      it('uploads image to board hidden space', function() {
+        return ensureBoard()
+          .then(function(board) {
+            return party.mccoy.spark.board._uploadImage(board, fixture.png, {hiddenSpace: true});
           })
           .then(function(scr) {
             return party.mccoy.spark.encryption.download(scr);
@@ -237,8 +249,8 @@ describe('Services', function() {
             ]);
           });
 
-          it('uploads file to spark files which includes loc', function() {
-            return party.mccoy.spark.board._uploadImage(conversation, fixture.png)
+          it('uploads file to board which includes loc', function() {
+            return party.mccoy.spark.board._uploadImage(board, fixture.png)
               .then(function(scr) {
                 assert.property(scr, 'loc');
                 testScr = scr;
@@ -333,8 +345,8 @@ describe('Services', function() {
           return party.mccoy.spark.board.persistence.deleteAllContent(board);
         });
 
-        it('uploads image to spark files', function() {
-          return party.mccoy.spark.board.persistence.addImage(conversation, board, fixture.png)
+        it('uploads image to board open space', function() {
+          return party.mccoy.spark.board.persistence.addImage(board, fixture.png)
             .then(function(fileContent) {
               testContent = fileContent[0].items[0];
               assert.equal(testContent.type, 'FILE', 'content type should be image');
