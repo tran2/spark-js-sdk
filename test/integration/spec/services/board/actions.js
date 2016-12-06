@@ -236,7 +236,7 @@ describe('Services', function() {
       });
 
       describe('FILE', function() {
-        describe('#publish()', function() {
+        describe.only('#publish()', function() {
           var testScr;
           var fixture = {
             png: 'sample-image-small-one.png'
@@ -266,7 +266,10 @@ describe('Services', function() {
               },
               payload: {
                 displayName: 'image.png',
-                scr: testScr
+                type: 'FILE',
+                file: {
+                  scr: testScr
+                }
               }
             };
 
@@ -274,7 +277,7 @@ describe('Services', function() {
             // same data that was sent.
             party.mccoy.spark.board.realtime.once('board.activity', function(boardData) {
               assert.equal(boardData.contentType, 'FILE');
-              assert.equal(boardData.payload.scr.loc, testScr.loc);
+              assert.equal(boardData.payload.file.scr.loc, testScr.loc);
               assert.equal(boardData.payload.displayName, 'image.png');
               done();
             });
@@ -350,6 +353,7 @@ describe('Services', function() {
             .then(function(fileContent) {
               testContent = fileContent[0].items[0];
               assert.equal(testContent.type, 'FILE', 'content type should be image');
+              assert.property(testContent, 'file', 'content should contain file property');
               assert.property(testContent, 'contentId', 'content should contain contentId property');
               assert.property(testContent, 'payload', 'content should contain payload property');
               assert.property(testContent, 'encryptionKeyUrl', 'content should contain encryptionKeyUrl property');
@@ -361,9 +365,10 @@ describe('Services', function() {
             .then(function(allContents) {
               var imageContent = find(allContents, {contentId: testContent.contentId});
               assert.isDefined(imageContent);
-              assert.property(imageContent, 'scr');
+              assert.property(imageContent, 'file');
+              assert.property(imageContent.file, 'scr');
               assert.equal(imageContent.displayName, 'sample-image-small-one.png');
-              testScr = imageContent.scr;
+              testScr = imageContent.file.scr;
               return imageContent.scr;
             });
         });

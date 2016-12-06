@@ -58,10 +58,14 @@ var PersistenceService = SparkBase.extend({
     return this.spark.board._uploadImage(channel, image, options)
       .then(function addContent(scr) {
         return this.spark.board.persistence.addContent(channel, [{
-          mimeType: image.type,
-          size: image.size,
+          type: 'FILE',
           displayName: image.name,
-          scr: scr
+          file: {
+            url: scr.loc,
+            mimeType: image.type,
+            size: image.size,
+            scr: scr
+          }
         }]);
       }.bind(this));
   },

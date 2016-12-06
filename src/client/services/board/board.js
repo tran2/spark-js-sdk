@@ -7,7 +7,9 @@
 
 /* eslint-env browser */
 
+var assign = require('lodash.assign');
 var isarray = require('lodash.isarray');
+var pick = require('lodash.pick');
 var Persistence = require('./persistence');
 var Realtime = require('./realtime');
 var reduce = require('lodash.reduce');
@@ -39,7 +41,7 @@ var BoardService = SparkBase.extend({
       var decryptPromise;
 
       if (content.type === 'FILE') {
-        decryptPromise =  this.decryptSingleFileContent(content.payload, content.encryptionKeyUrl);
+        decryptPromise =  this.decryptSingleFileContent(content, content.encryptionKeyUrl);
       }
       else {
         decryptPromise = this.decryptSingleContent(content.payload, content.encryptionKeyUrl);
@@ -71,21 +73,21 @@ var BoardService = SparkBase.extend({
   /**
    * Decryts a single FILE content object
    * @memberof Board.BoardService
-   * @param  {string} encryptedData
+   * @param  {Object} encryptedFile
    * @param  {string} encryptionKeyUrl
    * @return {Promise<Board~Content>}
    */
-  decryptSingleFileContent: function _decryptSingleFileContent(encryptedData, encryptionKeyUrl) {
-    var payload = JSON.parse(encryptedData);
+  decryptSingleFileContent: function _decryptSingleFileContent(encryptedFile, encryptionKeyUrl) {
+    var metadata = JSON.parse(encryptedFile.payload);
 
-    return this.spark.encryption.decryptScr(payload.scr, encryptionKeyUrl)
+    return this.spark.encryption.decryptScr(encryptedFile.file.scr, encryptionKeyUrl)
       .then(function setScrInPayload(scr) {
-        payload.scr = scr;
-        return this.spark.encryption.decryptText(payload.displayName, encryptionKeyUrl);
+        encryptedFile.file.scr = scr;
+        return this.spark.encryption.decryptText(metadata.displayName, encryptionKeyUrl);
       }.bind(this))
       .then(function setDisplayNameInPayload(displayName) {
-        payload.displayName = displayName;
-        return payload;
+        encryptedFile.displayName = displayName;
+        return encryptedFile;
       });
   },
 
@@ -120,8 +122,7 @@ var BoardService = SparkBase.extend({
       var encryptionPromise;
       var contentType = 'STRING';
 
-      // the existence of an scr will determine if the content is a FILE.
-      if (content.scr) {
+      if (content.file) {
         contentType = 'FILE';
         encryptionPromise = this.encryptSingleFileContent(encryptionKeyUrl, content);
       }
@@ -131,12 +132,14 @@ var BoardService = SparkBase.extend({
 
       return encryptionPromise
         .then(function createEncryptedContent(res) {
-          return {
-            device: this.spark.device.deviceType,
-            type: contentType,
-            encryptionKeyUrl: encryptionKeyUrl,
-            payload: res.encryptedData
-          };
+          return assign({
+              device: this.spark.device.deviceType,
+              type: contentType,
+              encryptionKeyUrl: encryptionKeyUrl,
+              payload: res.encryptedData
+            },
+            pick(res, 'file')
+          );
         }.bind(this));
     }, this));
   },
@@ -166,16 +169,19 @@ var BoardService = SparkBase.extend({
    * @return {Promise<Board~Content>}
    */
   encryptSingleFileContent: function _encryptSingleFileContent(encryptionKeyUrl, content) {
-    return this.spark.encryption.encryptScr(content.scr, encryptionKeyUrl)
+    return this.spark.encryption.encryptScr(content.file.scr, encryptionKeyUrl)
       .then(function encryptDisplayName(encryptedScr) {
-        content.scr = encryptedScr;
+        content.file.scr = encryptedScr;
         return this.spark.encryption.encryptText(content.displayName, encryptionKeyUrl);
       }.bind(this))
-      .then(function stringifyContent(displayName) {
-        content.displayName = displayName;
+      .then(function stringifyContent(encryptedDisplayName) {
+        var metadata = {
+          displayName: encryptedDisplayName
+        };
 
         return {
-          encryptedData: JSON.stringify(content),
+          file: content.file,
+          encryptedData: JSON.stringify(metadata),
           encryptionKeyUrl: encryptionKeyUrl
         };
       });

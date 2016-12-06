@@ -46,7 +46,7 @@ var RealtimeService = Mercury.extend({
     var encryptionPromise;
     var contentType = 'STRING';
 
-    if (message.payload.scr) {
+    if (message.payload.file) {
       contentType = 'FILE';
       encryptionPromise = this.spark.board.encryptSingleFileContent(channel.defaultEncryptionKeyUrl, message.payload);
     }
@@ -56,7 +56,7 @@ var RealtimeService = Mercury.extend({
 
     return encryptionPromise
       .then(function publishEncryptedData(encryptedPayloadAndKeyUrl) {
-        return this.publishEncrypted(encryptedPayloadAndKeyUrl.encryptionKeyUrl, encryptedPayloadAndKeyUrl.encryptedData, contentType);
+        return this.publishEncrypted(encryptedPayloadAndKeyUrl, contentType);
       }.bind(this));
   },
 
@@ -70,7 +70,7 @@ var RealtimeService = Mercury.extend({
     * 'STRING', and could also be 'FILE'
     * @returns {Promise<Board~Content>}
     */
-  publishEncrypted: function publishEncrypted(encryptionKeyUrl, encryptedData, contentType) {
+  publishEncrypted: function publishEncrypted(encryptedPropertiesAndKeyUrl, contentType) {
     var bindings = this.spark.board.realtime.boardBindings;
     var data = {
       id: uuid.v4(),
@@ -82,18 +82,21 @@ var RealtimeService = Mercury.extend({
       }],
       data: {
         eventType: 'board.activity',
-        contentType: 'STRING',
-        payload: encryptedData,
+        contentType: contentType,
+        payload: encryptedPropertiesAndKeyUrl.encryptedData,
         envelope: {
-          encryptionKeyUrl: encryptionKeyUrl
+          encryptionKeyUrl: encryptedPropertiesAndKeyUrl.encryptionKeyUrl
         }
       }
     };
 
-    // provide a hint for decryption
-    if (contentType) {
-      data.data.contentType = contentType;
+    if (contentType === 'FILE') {
+      data.data.payload = {
+        file: encryptedPropertiesAndKeyUrl.file,
+        payload: encryptedPropertiesAndKeyUrl.encryptedData
+      };
     }
+
     return this.socket.send(data);
   },
 
