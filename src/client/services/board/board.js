@@ -246,6 +246,7 @@ var BoardService = SparkBase.extend({
     var encryptedBinary;
     return this.spark.encryption.encryptBinary(file)
       .then(function _uploadImageToBoardSpace(res) {
+        console.log('uploadImage res', res);
         encryptedBinary = res;
         return this._uploadImageToBoardSpace(channel, res.cblob, options.hiddenSpace);
       }.bind(this))

@@ -367,6 +367,60 @@ const Board = SparkPlugin.extend({
   },
 
   /**
+   * Encrypts and uploads image to Board Space
+   * @memberof Board.BoardService
+   * @param  {File} file - File to be uploaded
+   * @private
+   * @returns {Object} Encrypted Scr and KeyUrl
+   */
+  _uploadImageToBoard(channel, file) {
+    return this.spark.encryption.encryptBinary(file)
+      .then(({scr, cdata}) => Promise.all([scr, this._uploadImageToBoardSpace(channel, cdata)]))
+      .then(([scr, res]) => {
+        console.log('TRANTEST DOWNLOAD URL', res.downloadUrl);
+        return assign(scr, {loc: res.downloadUrl})
+      });
+  },
+
+  _getHiddenSpaceUrl(channel) {
+    return this.spark.request({
+      method: `PUT`,
+      uri: `${channel.channelUrl}/spaces/hidden`
+    })
+    .then((res) => {
+      console.log('TRANTEST GOT SPACE URL', res.body.spaceUrl);
+      return res.body.spaceUrl;
+    });
+  },
+
+  _uploadImageToBoardSpace(channel, file) {
+    const fileSize = file.length || file.size || file.byteLength;
+
+    return this._getHiddenSpaceUrl(channel)
+      .then((spaceUrl) => this.spark.upload({
+        uri: `${spaceUrl}/upload_sessions`,
+        file,
+        qs: {
+          transcode: true
+        },
+        phases: {
+          initialize: {fileSize},
+          upload: {
+            $url(session) {
+              return session.uploadUrl;
+            }
+          },
+          finalize: {
+            $uri(session) {
+              return session.finishUploadUrl;
+            },
+            body: {fileSize}
+          }
+        }
+      }));
+  },
+
+  /**
    * Encrypts and uploads image to SparkFiles
    * @memberof Board.BoardService
    * @param  {Conversation} conversation - Contains the currently selected conversation

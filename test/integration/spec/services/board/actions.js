@@ -26,8 +26,8 @@ function generateTonsOfContents(numOfContents) {
 }
 
 describe('Services', function() {
-  describe.only('Board', function() {
-    this.timeout(120000);
+  describe('Board', function() {
+    this.timeout(0);
 
     // added a third member in order to be able to create another room.
     var party = {
@@ -74,7 +74,7 @@ describe('Services', function() {
           participants: pluck(party, 'id')
         })
         .then(function(c) {
-          console.log('created new conversation for board with id: ', c.id);
+          console.log('created new conversation for board with id: ', c.id, c.aclUrl);
           conversation = c;
           return Promise.resolve(c);
         })
@@ -130,7 +130,11 @@ describe('Services', function() {
     }
 
     before(function beamDown() {
-      return landingparty.beamDown(party);
+      return landingparty.beamDown(party)
+        .then(function() {
+          party.spock.spark.feature.setFeature('developer', 'files-acl-write', true);
+          party.mccoy.spark.feature.setFeature('developer', 'files-acl-write', true);
+        });
     });
 
     describe('#_uploadImage()', function() {
@@ -142,13 +146,16 @@ describe('Services', function() {
         return fixtures.fetchFixtures(fixture);
       });
 
-      it('uploads image to board open space', function() {
+      it.only('uploads image to board open space', function() {
+        var testScr;
         return ensureBoard()
           .then(function(board) {
             return party.mccoy.spark.board._uploadImage(board, fixture.png);
           })
           .then(function(scr) {
-            return party.mccoy.spark.encryption.download(scr);
+            console.log('HI');
+            testScr = scr;
+            return party.spock.spark.encryption.download(scr);
           })
           .then(function(file) {
             assert(fixtures.isMatchingFile(file, fixture.png));
@@ -236,7 +243,7 @@ describe('Services', function() {
       });
 
       describe('FILE', function() {
-        describe.only('#publish()', function() {
+        describe('#publish()', function() {
           var testScr;
           var fixture = {
             png: 'sample-image-small-one.png'

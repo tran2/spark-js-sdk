@@ -90,13 +90,114 @@ describe(`plugin-board`, () => {
       after(() => participants[0].spark.board.deleteAllContent(board));
 
       it(`uploads image to spark files`, () => {
+        let testScr;
         return participants[0].spark.board._uploadImage(conversation, fixture)
           .then((scr) => {
+            testScr = scr;
             return participants[0].spark.encryption.download(scr);
           })
           .then((downloadedFile) => {
             assert(fh.isMatchingFile(downloadedFile, fixture));
+          })
+          .then(() => {
+            return participants[1].spark.encryption.download(testScr);
+          })
+          .then((downloadedFile) => {
+            assert(fh.isMatchingFile(downloadedFile, fixture));
           });
+      });
+    });
+
+    describe(`#_test_acl`, () => {
+
+      describe.only(`#_uploadImageToBoard()`, () => {
+
+        after(() => participants[0].spark.board.deleteAllContent(board));
+
+        it(`uploads image to spark files`, () => {
+          let testScr;
+          return participants[0].spark.board._uploadImageToBoard(board, fixture)
+            .then((scr) => {
+              testScr = scr;
+              console.log('TRANTEST participant 0 download');
+              return participants[0].spark.encryption.download(scr);
+            })
+            .then((downloadedFile) => {
+              console.log('TRANTEST participant 0 download successful', downloadedFile);
+              assert(fh.isMatchingFile(downloadedFile, fixture));
+            })
+            .then(() => {
+              console.log('TRANTEST participant 1 download');
+              return participants[1].spark.encryption.download(testScr);
+            })
+            .then((downloadedFile) => {
+              console.log('TRANTEST participant 1 download successful');
+              assert(fh.isMatchingFile(downloadedFile, fixture));
+            });
+        });
+      });
+
+      describe(`#getContents()`, () => {
+
+        afterEach(() => participants[0].spark.board.deleteAllContent(board));
+
+        it(`adds and gets contents from the specified board`, () => {
+          const contents = [{type: `curve`}];
+          const data = [{
+            type: contents[0].type,
+            payload: JSON.stringify(contents[0])
+          }];
+
+          return participants[0].spark.board.deleteAllContent(board)
+            .then(() => participants[0].spark.board.addContent(board, data))
+            .then(() => participants[0].spark.board.getContents(board))
+            .then((contentPage) => {
+              assert.equal(contentPage.length, data.length);
+              assert.equal(contentPage.items[0].payload, data[0].payload);
+              assert.equal(contentPage.items[0].type, data[0].type);
+            })
+            .then(() => participants[0].spark.board.deleteAllContent(board));
+        });
+
+        it(`allows other people to read contents`, () => {
+          const contents = [{type: `curve`, points: [1, 2, 3, 4]}];
+          const data = [{
+            type: contents[0].type,
+            payload: JSON.stringify(contents[0])
+          }];
+
+          return participants[0].spark.board.addContent(board, data)
+            .then(() => {
+              return participants[1].spark.board.getContents(board);
+            })
+            .then((contentPage) => {
+              assert.equal(contentPage.length, data.length);
+              assert.equal(contentPage.items[0].payload, data[0].payload);
+              return participants[2].spark.board.getContents(board);
+            })
+            .then((contentPage) => {
+              assert.equal(contentPage.length, data.length);
+              assert.equal(contentPage.items[0].payload, data[0].payload);
+            });
+        });
+
+        it(`allows other people to write contents`, () => {
+          const contents = [{type: `curve`, points: [1, 2, 3, 4]}];
+          const data = [{
+            type: contents[0].type,
+            payload: JSON.stringify(contents[0])
+          }];
+
+          return participants[2].spark.board.addContent(board, data)
+            .then(() => {
+              return participants[1].spark.board.getContents(board);
+            })
+            .then((contentPage) => {
+              assert.equal(contentPage.length, data.length);
+              assert.equal(contentPage.items[0].payload, data[0].payload);
+            });
+        });
+
       });
     });
 

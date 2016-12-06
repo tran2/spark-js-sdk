@@ -75,6 +75,7 @@ var EncryptionServiceBase = SparkBase.extend(
     var promise = this._fetchDownloadUrl(scr)
       .then(function downloadAndEmit(url) {
         var promise = this._fetchBinary(url);
+        console.log('Download URL', url);
         promise.on('download-progress', emitter.emit.bind(emitter, 'progress'));
         return promise;
       }.bind(this))
@@ -97,7 +98,7 @@ var EncryptionServiceBase = SparkBase.extend(
   },
 
   _fetchDownloadUrl: function _fetchDownloadUrl(scr) {
-    this.logger.info('encryption: retrieving download url for encrypted file');
+    this.logger.info('encryption: retrieving download url for encrypted file', scr.loc);
     // TODO _fetchDownloadUrl should be a Fetcher
     // TODO this should be able to determine if scr is something that files
     // knows about.
@@ -113,6 +114,7 @@ var EncryptionServiceBase = SparkBase.extend(
       }
     })
     .then(function processResponse(res) {
+      console.log('RES', res);
       var url = res.body.endpoints[scr.loc];
       if (!url) {
         return Promise.reject(new Error('`scr.loc` does not appear to identify a file known to Spark'));

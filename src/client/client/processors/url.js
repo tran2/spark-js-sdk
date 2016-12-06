@@ -34,6 +34,7 @@ var urlProcessor = {
   },
 
   checkOptions: function checkOptions(options) {
+    console.log('OPTIONS', options);
     if (!options.api) {
       throw new Error('An `api` or `uri` parameter is required');
     }
