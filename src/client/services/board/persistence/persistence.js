@@ -327,9 +327,10 @@ var PersistenceService = SparkBase.extend({
     var data = {
       mercuryConnectionServiceClusterUrl: localClusterServiceUrls.mercuryConnectionServiceClusterUrl,
       webSocketUrl: webSocketUrl,
-      action: 'REPLACE'
+      action: 'ADD'
     };
 
+    console.log('REGISTER', channel.channelUrl);
     return this.spark.request({
       method: 'POST',
       uri: channel.channelUrl + '/register',
