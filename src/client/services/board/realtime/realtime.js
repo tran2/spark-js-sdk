@@ -30,8 +30,8 @@ var RealtimeService = Mercury.extend({
       default: function defaultBoardSocketUrl() { return ''; }
     },
     boardBindings: {
-      type: 'array',
-      default: function defaultBoardBinding() { return []; }
+      type: 'object',
+      default: function defaultBoardBinding() { return {}; }
     },
     isSharingMercury: {
       type: 'boolean',
@@ -60,7 +60,7 @@ var RealtimeService = Mercury.extend({
 
     return encryptionPromise
       .then(function publishEncryptedData(encryptedPayloadAndKeyUrl) {
-        return this.publishEncrypted(encryptedPayloadAndKeyUrl, contentType);
+        return this.publishEncrypted(encryptedPayloadAndKeyUrl, contentType, channel);
       }.bind(this));
   },
 
@@ -73,14 +73,14 @@ var RealtimeService = Mercury.extend({
     * 'STRING', and could also be 'FILE'
     * @returns {Promise<Board~Content>}
     */
-  publishEncrypted: function publishEncrypted(encryptedDataAndKeyUrl, contentType) {
+  publishEncrypted: function publishEncrypted(encryptedDataAndKeyUrl, contentType, channel) {
     var bindings = this.spark.board.realtime.boardBindings;
     var data = {
       id: uuid.v4(),
       type: 'publishRequest',
       recipients: [{
         alertType: 'none',
-        route: bindings[0],
+        route: bindings[channel.channelId],
         headers: {}
       }],
       data: {
@@ -88,7 +88,8 @@ var RealtimeService = Mercury.extend({
         contentType: contentType,
         payload: encryptedDataAndKeyUrl.encryptedData,
         envelope: {
-          encryptionKeyUrl: encryptedDataAndKeyUrl.encryptionKeyUrl
+          encryptionKeyUrl: encryptedDataAndKeyUrl.encryptionKeyUrl,
+          channelId: channel.channelId
         }
       }
     };
@@ -103,6 +104,7 @@ var RealtimeService = Mercury.extend({
     // if socket is shared, we're sending using mercury's socket rather than
     // board's instance
     if (this.spark.feature.getFeature('developer', 'web-shared-mercury') && this.isSharingMercury) {
+      console.log('SENDING', data);
       return this.spark.mercury.socket.send(data);
     }
     else {
@@ -125,7 +127,9 @@ var RealtimeService = Mercury.extend({
     return this.spark.board.persistence.register(bindingObj)
       .then(function setWebSocketUrl(registration) {
         this.set({boardWebSocketUrl: registration.webSocketUrl});
-        this.set({boardBindings: bindings});
+        var tempBinding = {};
+        tempBinding[channel.channelId] = bindings[0];
+        this.set({boardBindings: tempBinding});
         return this.connect();
       }.bind(this))
       .then(function setSharingMercuryFalse() {
@@ -142,7 +146,8 @@ var RealtimeService = Mercury.extend({
   connectToSharedMercury: function connectToSharedMercury(channel) {
     return this.spark.board.persistence.registerToShareMercury(channel)
       .then(function assignBindingAndWebSocketUrl(res) {
-        this.boardBindings = [res.binding];
+        this.boardBindings[channel.channelId] = res.binding;
+        console.log('BINDINGS', this.boardBindings);
         this.boardWebSocketUrl = res.webSocketUrl;
 
         if (!res.sharedWebSocket) {
@@ -170,9 +175,9 @@ var RealtimeService = Mercury.extend({
       return this.disconnect();
     }
 
-    return this.spark.board.persistence.unregisterFromSharedMercury(channel, this.boardBindings[0])
+    return this.spark.board.persistence.unregisterFromSharedMercury(channel, this.boardBindings[channel.channelId])
       .then(function assignBindingAndWebSocketUrl(res) {
-        this.boardBindings = [];
+        delete this.boardBindings[channel.channelId];
         this.boardWebSocketUrl = '';
         this.isSharingMercury = false;
         return res;
