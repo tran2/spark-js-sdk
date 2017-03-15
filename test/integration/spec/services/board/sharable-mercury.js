@@ -74,8 +74,8 @@ describe('Services', function() {
               return party.spock.spark.board.persistence.createChannel(conversation);
             })
             .then(function(res) {
-              console.log('created second board: ', secondBoard);
               secondBoard = res;
+              console.log('created second board: ', secondBoard);
               return res;
             });
         })
@@ -254,6 +254,7 @@ describe('Services', function() {
           });
 
           afterEach(function() {
+            console.log('DISCONNECT');
             return Promise.all(map(party, function(member) {
               return member.spark.mercury.disconnect()
                 .then(function() {
@@ -296,77 +297,11 @@ describe('Services', function() {
                 done();
               }
             });
-            party.spock.spark.board.realtime.publish(board, data1);
-            party.spock.spark.board.realtime.publish(secondBoard, data2);
-          });
 
-          describe.skip('when a message is sent from the shared connection', function() {
-            it('can be received by another separated connection', function(done) {
-              var data = {
-                envelope: {
-                  channelId: board,
-                  roomId: conversation.id
-                },
-                payload: {
-                  msg: uniqueRealtimeData
-                }
-              };
-
-              // mccoy is going to listen for mercury data and confirm that we have the
-              // same data that was sent.
-              party.mccoy.spark.board.realtime.once('board.activity', function(boardData) {
-                assert.equal(boardData.contentType, 'STRING');
-                assert.equal(boardData.payload.msg, uniqueRealtimeData);
-                done();
-              });
-
-              // this is to ensure messages come to the realtime one (for non-shared)
-              party.mccoy.spark.mercury.once('board.activity', function() {
-                assert.fail(0, 1, 'messages should come to realtime, not mercury');
-              });
-
-              // confirm that both are listening.
-              assert(party.spock.spark.mercury.connected, 'spock is not listening');
-              assert(party.spock.spark.board.realtime.isSharingMercury, 'spock is not sharing mercury');
-              assert(party.mccoy.spark.mercury.connected, 'mccoy is not listening');
-              assert.isFalse(party.mccoy.spark.board.realtime.isSharingMercury, 'mccoy should not be sharing mercury');
-
-              // do not return promise because we want done() to be called on
-              // board.activity
-              party.spock.spark.board.realtime.publish(board, data);
-            });
-          });
-
-          describe.skip('when a message is sent from the separated connection', function() {
-            it('can be received by the shared connection', function(done) {
-              var data = {
-                envelope: {
-                  channelId: board,
-                  roomId: conversation.id
-                },
-                payload: {
-                  msg: uniqueRealtimeData
-                }
-              };
-
-              // spock is listening for mercury data and confirm that we have the
-              // same data that was sent.
-              party.spock.spark.mercury.once('board.activity', function(boardData) {
-                assert.equal(boardData.contentType, 'STRING');
-                assert.equal(boardData.payload.msg, uniqueRealtimeData);
-                done();
-              });
-
-              // confirm that both are listening.
-              assert(party.spock.spark.mercury.connected, 'spock is not listening');
-              assert(party.spock.spark.board.realtime.isSharingMercury, 'spock is not sharing mercury');
-              assert(party.mccoy.spark.mercury.connected, 'mccoy is not listening');
-              assert.isFalse(party.mccoy.spark.board.realtime.isSharingMercury, 'mccoy should not be sharing mercury');
-
-              // do not return promise because we want done() to be called on
-              // board.activity
-              party.mccoy.spark.board.realtime.publish(board, data);
-            });
+            return Promise.all([
+              party.spock.spark.board.realtime.publish(board, data1),
+              party.spock.spark.board.realtime.publish(secondBoard, data2)
+            ]);
           });
         });
       });
