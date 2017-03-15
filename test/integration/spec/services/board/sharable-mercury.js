@@ -10,6 +10,7 @@ var uuid = require('uuid');
 var pluck = require('lodash.pluck');
 var map = require('lodash.map');
 var landingparty = require('../../../lib/landingparty');
+var promiseSeries = require('es6-promise-series');
 
 describe('Services', function() {
   describe('Board', function() {
@@ -244,11 +245,11 @@ describe('Services', function() {
                 });
             }))
               .then(function() {
-                return Promise.all([
-                  party.spock.spark.board.realtime.connectToSharedMercury(board),
-                  party.mccoy.spark.board.realtime.connectToSharedMercury(board),
-                  party.spock.spark.board.realtime.connectToSharedMercury(secondBoard),
-                  party.mccoy.spark.board.realtime.connectToSharedMercury(secondBoard)
+                return promiseSeries([
+                  party.spock.spark.board.realtime.connectToSharedMercury.bind(party.spock.spark.board.realtime, board),
+                  party.mccoy.spark.board.realtime.connectToSharedMercury.bind(party.mccoy.spark.board.realtime, board),
+                  party.spock.spark.board.realtime.connectToSharedMercury.bind(party.spock.spark.board.realtime, secondBoard),
+                  party.mccoy.spark.board.realtime.connectToSharedMercury.bind(party.mccoy.spark.board.realtime, secondBoard)
                 ]);
               });
           });
