@@ -216,7 +216,7 @@ assign(Socket.prototype, {
   onmessage: function onmessage(event) {
     try {
       var data = JSON.parse(event.data);
-
+      console.log('GOT', data);
       var sequenceNumber = parseInt(data.sequenceNumber);
       this.logger.debug('socket: sequence number: ', sequenceNumber);
       if (this.expectedSequenceNumber && sequenceNumber !== this.expectedSequenceNumber) {
@@ -255,7 +255,7 @@ assign(Socket.prototype, {
       if (isObject(data)) {
         data = JSON.stringify(data);
       }
-
+      console.log('SOCKET SENT');
       this._socket.send(data);
       resolve();
     }.bind(this));
