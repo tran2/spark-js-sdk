@@ -144,6 +144,7 @@ var RealtimeService = Mercury.extend({
     * @returns {Promise<Board~Registration>}
     */
   connectToSharedMercury: function connectToSharedMercury(channel) {
+    console.log('START REGISTER');
     return this.spark.board.persistence.registerToShareMercury(channel)
       .then(function assignBindingAndWebSocketUrl(res) {
         this.boardBindings[channel.channelId] = res.binding;
