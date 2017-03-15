@@ -221,7 +221,6 @@ var BoardService = SparkBase.extend({
 
   processActivityEvent: function processActivityEvent(message) {
     var decryptionPromise;
-    console.log('MESSAGE', message);
     if (message.contentType === 'FILE') {
       decryptionPromise = this.decryptSingleFileContent(message.payload, message.envelope.encryptionKeyUrl);
     }

@@ -147,12 +147,13 @@ var RealtimeService = Mercury.extend({
     return this.spark.board.persistence.registerToShareMercury(channel)
       .then(function assignBindingAndWebSocketUrl(res) {
         this.boardBindings[channel.channelId] = res.binding;
-        console.log('BINDINGS', this.boardBindings);
+        console.log('BINDINGS', res);
         this.boardWebSocketUrl = res.webSocketUrl;
 
         if (!res.sharedWebSocket) {
           return this.connect()
             .then(function returnRegistrationInfo() {
+              this.logger.info('Cannot share mercury, creating new one');
               this.isSharingMercury = false;
               return res;
             }.bind(this));
