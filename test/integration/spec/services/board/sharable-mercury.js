@@ -262,9 +262,9 @@ describe('Services', function() {
                   if (!member.spark.board.realtime.isSharingMercury) {
                     return member.spark.board.realtime.disconnect();
                   }
-                  return  Promise.all([
-                    member.spark.board.realtime.disconnectFromSharedMercury(board),
-                    member.spark.board.realtime.disconnectFromSharedMercury(secondBoard)
+                  return  promiseSeries([
+                    member.spark.board.realtime.disconnectFromSharedMercury.bind(member.spark.board.realtime, board),
+                    member.spark.board.realtime.disconnectFromSharedMercury.bind(member.spark.board.realtime, secondBoard)
                   ]);
                 });
             }));

@@ -112,6 +112,7 @@ var Mercury = SparkBase.extend(
   },
 
   processRegistrationStatusEvent: function processRegistrationStatusEvent(message) {
+    console.log('ASSIGN LOCAL CLUSTER');
     this.localClusterServiceUrls = message.localClusterServiceUrls;
   },
 

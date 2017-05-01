@@ -255,7 +255,7 @@ assign(Socket.prototype, {
       if (isObject(data)) {
         data = JSON.stringify(data);
       }
-      console.log('SOCKET SENT');
+      console.log('SOCKET SENT', data);
       this._socket.send(data);
       resolve();
     }.bind(this));
